@@ -1,0 +1,53 @@
+name: Zerphy building
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Main Zephyr repository checkout
+        uses: actions/checkout@v4
+        with:
+          repository: zephyrproject-rtos/zephyr
+          path: zephyr
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: zephyr
+          toolchains: arm-zephyr-eabi
+          west-group-filter: -tools,-bootloader,-babblesim
+          west-project-filter: -nrf_hw_models
+
+      - name: Build
+        run: |
+          cd zephyr
+          mkdir applications
+          cd applications
+          git clone https://github.com/OpenNuvoton/NuMaker-Zephyr-TFLM-ObjectDetection
+          cd ..
+          west config manifest.project-filter -- +tflite-micro
+          west update
+          west -v build -b numaker_m55m1 applications/NuMaker-Zephyr-TFLM-ObjectDetection --shield himax_hm1055 --shield levetop_lt7381
+
+      - name: Collect artifacts with directory structure
+        run: |
+          mkdir -p artifacts
+          find SampleCode -type f -name "*.bin" -exec cp --parents {} artifacts/ \;
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-artifacts
+          path: artifacts/
