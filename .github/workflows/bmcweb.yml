@@ -28,22 +28,23 @@ jobs:
           libssl-dev libboost-all-dev libpam0g-dev \
           zlib1g-dev nlohmann-json3-dev libsystemd-dev libtinyxml2-dev
         
-        # Install latest Meson and Mako (required for sdbusplus code gen)
-        pip3 install --user --upgrade meson mako
+        # Install Meson globally so sudo and all users can find it
+        sudo pip3 install --upgrade meson mako jsonschema
 
     - name: Build sdbusplus
       run: |
         git clone https://github.com/openbmc/sdbusplus.git
         cd sdbusplus
-        # Use 'python3 -m meson' to ensure you use the pip version, not the apt version
-        python3 -m meson setup builddir -Dtests=disabled -Dexamples=disabled
+        # Call meson directly
+        meson setup builddir -Dtests=disabled -Dexamples=disabled
         ninja -C builddir
         sudo ninja -C builddir install
 
     - name: Build bmcweb
       run: |
         cd bmcweb-src
-        python3 -m meson setup builddir \
+        # Call meson directly
+        meson setup builddir \
             -Dbuildtype=debug \
             -Dbmcweb-logging=enabled \
             -Dtests=disabled \
