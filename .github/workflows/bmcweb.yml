@@ -29,7 +29,7 @@ jobs:
           zlib1g-dev nlohmann-json3-dev libsystemd-dev libtinyxml2-dev
         
         # Install Meson globally so sudo and all users can find it
-        sudo pip3 install --upgrade meson mako jsonschema
+        sudo pip3 install --upgrade meson mako jsonschema inflection
 
     - name: Build sdbusplus
       run: |
