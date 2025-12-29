@@ -1,4 +1,4 @@
-name: bmcweb
+name: bmcweb-standalone-build
 
 on:
   push:
@@ -8,48 +8,53 @@ on:
   workflow_dispatch:
     inputs:
       git-address:
-        description: 'git-address'
+        description: 'Git Repository URL'
         required: true
         default: 'https://github.com/openbmc/bmcweb.git'
       branches-tags:
-        description: 'branches-tags'
+        description: 'Branch or Tag to build'
         required: true
         default: 'master'
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
-    - name: Clone source code
-      run: |
-        git clone ${{github.event.inputs.git-address}} /opt/bmcweb
-        cd /opt/bmcweb
-
-    - name: Install packages
+    - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get upgrade
-        sudo apt-get install -y git gcc g++ make file wget gawk diffstat bzip2 \
-                                cpio chrpath zstd lz4 bzip cmake meson \
-                                ninja-build libssl-dev libboost-all-dev \
-                                libpam0g-dev zlib1g-dev nlohmann-json3-dev \
-                                sdbusplus-dev tinyxml2-dev
+        sudo apt-get install -y \
+          g++ cmake meson ninja-build \
+          libssl-dev libboost-all-dev libpam0g-dev \
+          zlib1g-dev nlohmann-json3-dev \
+          libsystemd-dev libtinyxml2-dev
 
-    - name: Bulid
+    - name: Clone source code
       run: |
-        cd /opt/bmcweb
-        # Create a build directory
+        # Using $GITHUB_WORKSPACE instead of /opt to avoid sudo/permission issues
+        git clone --branch ${{ github.event.inputs.branches-tags || 'master' }} ${{ github.event.inputs.git-address || 'https://github.com/openbmc/bmcweb.git' }} bmcweb-src
+
+    - name: Build sdbusplus (Required Dependency)
+      run: |
+        # sdbusplus is usually not in apt; we build a minimal version for bmcweb
+        git clone https://github.com/openbmc/sdbusplus.git
+        cd sdbusplus
+        meson setup builddir -Dtests=disabled -Dexamples=disabled
+        ninja -C builddir
+        sudo ninja -C builddir install
+
+    - name: Build bmcweb
+      run: |
+        cd bmcweb-src
         meson setup builddir \
             -Dbuildtype=debug \
             -Dbmcweb-logging=enabled \
-            -Dredfish=enabled \
-            -Dtests=disabled
-       ninja -C builddir
-       ls builddir/bmcweb
-    
-    #- name : Upload buildroot-${{github.event.inputs.branches-tags}}-${{github.event.inputs.board}}
-      #uses: actions/upload-artifact@master
-      #with:
-        #name: buildroot-${{github.event.inputs.branches-tags}}-${{github.event.inputs.board}}
-        #path: /opt/firmware
+            -Dtests=disabled \
+            -Dredfish=enabled
+        ninja -C builddir
+        
+    - name: Upload bmcweb Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: bmcweb-bin-${{ github.event.inputs.branches-tags }}
+        path: bmcweb-src/builddir/bmcweb
