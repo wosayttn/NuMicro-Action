@@ -20,33 +20,30 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-    - name: Install Dependencies
+    - name: Install Packages and Modern Meson
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          g++ cmake meson ninja-build \
+          g++ cmake ninja-build python3-pip python3-setuptools \
           libssl-dev libboost-all-dev libpam0g-dev \
-          zlib1g-dev nlohmann-json3-dev \
-          libsystemd-dev libtinyxml2-dev
+          zlib1g-dev nlohmann-json3-dev libsystemd-dev libtinyxml2-dev
+        
+        # Install latest Meson and Mako (required for sdbusplus code gen)
+        pip3 install --user --upgrade meson mako
 
-    - name: Clone source code
+    - name: Build sdbusplus
       run: |
-        # Using $GITHUB_WORKSPACE instead of /opt to avoid sudo/permission issues
-        git clone --branch ${{ github.event.inputs.branches-tags || 'master' }} ${{ github.event.inputs.git-address || 'https://github.com/openbmc/bmcweb.git' }} bmcweb-src
-
-    - name: Build sdbusplus (Required Dependency)
-      run: |
-        # sdbusplus is usually not in apt; we build a minimal version for bmcweb
         git clone https://github.com/openbmc/sdbusplus.git
         cd sdbusplus
-        meson setup builddir -Dtests=disabled -Dexamples=disabled
+        # Use 'python3 -m meson' to ensure you use the pip version, not the apt version
+        python3 -m meson setup builddir -Dtests=disabled -Dexamples=disabled
         ninja -C builddir
         sudo ninja -C builddir install
 
     - name: Build bmcweb
       run: |
         cd bmcweb-src
-        meson setup builddir \
+        python3 -m meson setup builddir \
             -Dbuildtype=debug \
             -Dbmcweb-logging=enabled \
             -Dtests=disabled \
