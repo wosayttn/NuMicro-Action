@@ -33,6 +33,7 @@ jobs:
   
     - name: Build sdbusplus
       run: |
+        cd /opt
         git clone https://github.com/openbmc/sdbusplus.git
         cd sdbusplus
         # Call meson directly
@@ -42,7 +43,10 @@ jobs:
 
     - name: Build bmcweb
       run: |
-        cd bmcweb-src
+        cd /opt
+        git clone ${{ github.event.inputs.git-address }} bmcweb
+        cd bmcweb
+
         # Call meson directly
         meson setup builddir \
             -Dbuildtype=debug \
