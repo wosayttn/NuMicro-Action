@@ -1,6 +1,10 @@
 name: bmcweb
 
 on:
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
     inputs:
       git-address:
@@ -26,24 +30,22 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get upgrade
-        sudo apt-get install -y git gcc g++ make file wget gawk diffstat bzip2 cpio chrpath zstd lz4 bzip cmake meson \
-        ninja-build libssl-dev libboost-all-dev libpam0g-dev zlib1g-dev nlohmann-json3-dev \ 
-        sdbusplus-dev tinyxml2-dev
-    
+        sudo apt-get install -y git gcc g++ make file wget gawk diffstat bzip2 \
+                                cpio chrpath zstd lz4 bzip cmake meson \
+                                ninja-build libssl-dev libboost-all-dev \
+                                libpam0g-dev zlib1g-dev nlohmann-json3-dev \
+                                sdbusplus-dev tinyxml2-dev
+
     - name: Bulid
       run: |
-
         cd /opt/bmcweb
-
         # Create a build directory
         meson setup builddir \
             -Dbuildtype=debug \
             -Dbmcweb-logging=enabled \
             -Dredfish=enabled \
             -Dtests=disabled
-
        ninja -C builddir
-
        ls builddir/bmcweb
     
     #- name : Upload buildroot-${{github.event.inputs.branches-tags}}-${{github.event.inputs.board}}
