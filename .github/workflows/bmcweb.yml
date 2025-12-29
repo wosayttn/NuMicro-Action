@@ -1,0 +1,53 @@
+name: bmcweb
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-address:
+        description: 'git-address'
+        required: true
+        default: 'https://github.com/openbmc/bmcweb.git'
+      branches-tags:
+        description: 'branches-tags'
+        required: true
+        default: 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Clone source code
+      run: |
+        git clone ${{github.event.inputs.git-address}} /opt/bmcweb
+        cd /opt/bmcweb
+
+    - name: Install packages
+      run: |
+        sudo apt-get update
+        sudo apt-get upgrade
+        sudo apt-get install -y git gcc g++ make file wget gawk diffstat bzip2 cpio chrpath zstd lz4 bzip cmake meson \
+        ninja-build libssl-dev libboost-all-dev libpam0g-dev zlib1g-dev nlohmann-json3-dev \ 
+        sdbusplus-dev tinyxml2-dev
+    
+    - name: Bulid
+      run: |
+
+        cd /opt/bmcweb
+
+        # Create a build directory
+        meson setup builddir \
+            -Dbuildtype=debug \
+            -Dbmcweb-logging=enabled \
+            -Dredfish=enabled \
+            -Dtests=disabled
+
+       ninja -C builddir
+
+       ls builddir/bmcweb
+    
+    #- name : Upload buildroot-${{github.event.inputs.branches-tags}}-${{github.event.inputs.board}}
+      #uses: actions/upload-artifact@master
+      #with:
+        #name: buildroot-${{github.event.inputs.branches-tags}}-${{github.event.inputs.board}}
+        #path: /opt/firmware
