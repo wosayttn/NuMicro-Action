@@ -46,7 +46,6 @@ jobs:
         
         git pull origin ${{github.event.inputs.branches-tags}}
         
-        source setup ${{github.event.inputs.machine}} /opt/firmware
         TEMPLATECONF=meta-numaker/${{github.event.inputs.machine}}/conf/templates/default source oe-init-build-env build-nuc980
 
         bitbake ${{github.event.inputs.target}} --runall=fetch
