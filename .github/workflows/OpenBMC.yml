@@ -6,19 +6,19 @@ on:
       git-address:
         description: 'git-address'
         required: true
-        default: 'https://github.com/wosayttn/openbmc.git'
+        default: 'https://github.com/opennuvoton/openbmc.git'
       branches-tags:
         description: 'branches-tags'
         required: true
-        default: 'master'
+        default: 'numaker'
       machine:
         description: 'machine'
         required: true
-        default: 'palmetto'
+        default: 'meta-evb-nuc980'
       target:
         description: 'target'
         required: true
-        default: 'obmc-phosphor-image'
+        default: 'nuwriter-nuc980-pack'
 
 jobs:
   build:
@@ -47,6 +47,7 @@ jobs:
         git pull origin ${{github.event.inputs.branches-tags}}
         
         source setup ${{github.event.inputs.machine}} /opt/firmware
+        TEMPLATECONF=meta-numaker/${{github.event.inputs.machine}}/conf/templates/default source oe-init-build-env build-nuc980
 
         bitbake ${{github.event.inputs.target}} --runall=fetch
         
